@@ -1,19 +1,17 @@
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, func
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
 
+from sqlalchemy import String, DateTime, func
+from sqlalchemy.orm import Mapped, mapped_column
 from src.database import Base
 
-
-class Venue(Base):
-    __tablename__ = "venues"
+class User(Base):
+    __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(100))
-    address: Mapped[str] = mapped_column(String(100))
-    layout: Mapped[dict] = mapped_column(JSONB)
+    email: Mapped[str] = mapped_column(String(50), unique=True, )
+    username: Mapped[str] = mapped_column(String(30), unique=True, index = True)
+    hashed_password: Mapped[str] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
