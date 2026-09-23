@@ -7,8 +7,10 @@ from src.models import Venue, User, Seat
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
+        engine.echo = False
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+        engine.echo = True
     yield
 
 app = FastAPI(lifespan=lifespan)

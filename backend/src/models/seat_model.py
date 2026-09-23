@@ -8,8 +8,6 @@ from src.database import Base
 class SeatType(str, enum.Enum):
     STANDARD = "standard"
     VIP = "vip"
-    WHEELCHAIR = "wheelchair"
-
 
 class Seat(Base):
     __tablename__ = "seats"
