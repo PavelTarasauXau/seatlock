@@ -17,8 +17,6 @@ class Hold(Base):
     __tablename__ = "holds"
 
     __table_args__ = (
-        # Один активный hold на место: частичный уникальный индекс,
-        # ограничение действует только на строки со status='active'
         Index(
             "ix_holds_one_active_per_seat",
             "event_seat_id",
@@ -40,9 +38,6 @@ class Hold(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    # Без default/server_default: TTL зависит от event.hold_ttl_seconds,
-    # который для БД недоступен — значение вычисляется в Python при создании
-    # holds (datetime.now(timezone.utc) + timedelta(seconds=event.hold_ttl_seconds))
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), index=True
     )

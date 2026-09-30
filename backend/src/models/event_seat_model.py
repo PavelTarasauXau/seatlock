@@ -15,8 +15,6 @@ class EventSeat(Base):
 
     __table_args__ = (
         UniqueConstraint("event_id", "seat_id"),
-        # Составной индекс: быстрый поиск свободных мест конкретного мероприятия
-        # (WHERE event_id = ... AND status = 'available')
         Index("ix_event_seats_event_id_status", "event_id", "status"),
     )
 
@@ -27,7 +25,6 @@ class EventSeat(Base):
     seat_id: Mapped[int] = mapped_column(
         ForeignKey("seats.id", ondelete="RESTRICT"), index=True
     )
-    # Numeric -> Decimal в Python: float даёт погрешности округления, для денег недопустимо
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     status: Mapped[EventSeatStatus] = mapped_column(
         Enum(EventSeatStatus, native_enum=False, length=20), default=EventSeatStatus.AVAILABLE
