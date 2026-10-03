@@ -1,8 +1,12 @@
 import enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Integer, ForeignKey, UniqueConstraint, Enum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.database import Base
+
+if TYPE_CHECKING:
+    from src.models.venue_model import Venue
 
 
 class SeatType(str, enum.Enum):
@@ -25,5 +29,8 @@ class Seat(Base):
     seat_number: Mapped[int] = mapped_column(Integer)
     
     seat_type: Mapped[SeatType] = mapped_column(
-        Enum(SeatType, native_enum=False, length=20), default=SeatType.STANDARD
+        Enum(SeatType, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
+        default=SeatType.STANDARD
     )
+
+    venue: Mapped["Venue"] = relationship(back_populates="seats")

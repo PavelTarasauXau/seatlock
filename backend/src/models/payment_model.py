@@ -19,7 +19,8 @@ class Payment(Base):
         ForeignKey("bookings.id", ondelete="RESTRICT"), index=True
     )
     status: Mapped[PaymentStatus] = mapped_column(
-        Enum(PaymentStatus, native_enum=False, length=20), default=PaymentStatus.PENDING
+        Enum(PaymentStatus, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
+        default=PaymentStatus.PENDING
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     provider: Mapped[str] = mapped_column(String(50))

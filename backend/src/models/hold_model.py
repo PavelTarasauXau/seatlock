@@ -33,7 +33,8 @@ class Hold(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), index=True
     )
     status: Mapped[HoldStatus] = mapped_column(
-        Enum(HoldStatus, native_enum=False, length=20), default=HoldStatus.ACTIVE
+        Enum(HoldStatus, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
+        default=HoldStatus.ACTIVE
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

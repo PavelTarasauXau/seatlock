@@ -27,5 +27,6 @@ class EventSeat(Base):
     )
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     status: Mapped[EventSeatStatus] = mapped_column(
-        Enum(EventSeatStatus, native_enum=False, length=20), default=EventSeatStatus.AVAILABLE
+        Enum(EventSeatStatus, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
+        default=EventSeatStatus.AVAILABLE
     )

@@ -21,7 +21,8 @@ class Event(Base):
     title: Mapped[str] = mapped_column(String(100))
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[EventStatus] = mapped_column(
-        Enum(EventStatus, native_enum = False, length = 20), default=EventStatus.DRAFT
+        Enum(EventStatus, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
+        default=EventStatus.DRAFT
     )
 
     hold_ttl_seconds: Mapped[int] = mapped_column(default=600)

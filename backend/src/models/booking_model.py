@@ -23,7 +23,8 @@ class Booking(Base):
         ForeignKey("events.id", ondelete="RESTRICT"), index=True
     )
     status: Mapped[BookingStatus] = mapped_column(
-        Enum(BookingStatus, native_enum=False, length=20), default=BookingStatus.PENDING_PAYMENT
+        Enum(BookingStatus, native_enum=False, length=20, values_callable=lambda e: [m.value for m in e]),
+        default=BookingStatus.PENDING_PAYMENT
     )
     total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     created_at: Mapped[datetime] = mapped_column(

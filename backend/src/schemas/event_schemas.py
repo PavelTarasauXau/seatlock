@@ -1,12 +1,15 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from src.models.event_model import EventStatus
+from decimal import Decimal
+from src.models.seat_model import SeatType
 
 class EventCreate(BaseModel):
 
     venue_id: int
     title: str = Field(max_length=100)
     starts_at: datetime
+    prices: dict[SeatType, Decimal]
 
 class EventResponse(BaseModel):
 
