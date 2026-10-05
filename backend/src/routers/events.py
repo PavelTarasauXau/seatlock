@@ -1,11 +1,13 @@
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from src.schemas import EventCreate, EventResponse, EventSeatResponse
+from src.schemas import EventCreate, EventResponse, EventSeatResponse, HoldResponse
 from src.database import Session
 from src.auth import CurrentUser
-from src.models import Event, Venue, EventSeat
+from src.models import Event, Venue, EventSeat, Hold
 from src.models.event_seat_model import EventSeatStatus
+from src.services import release_expired_hold
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -56,6 +58,7 @@ async def create_event(
         venue_id=event_in.venue_id,
         title=event_in.title,
         starts_at=event_in.starts_at,
+        hold_ttl_seconds=event_in.hold_ttl_seconds,
     )
 
     session.add(new_event)
@@ -108,4 +111,50 @@ async def get_event_seats(
     event_seats = result.scalars().all()
     return event_seats
 
+@router.post("/{event_id}/seats/{event_seat_id}/hold", response_model=HoldResponse, status_code=status.HTTP_201_CREATED)
+async def create_hold(
+    event_id: int,
+    event_seat_id: int,
+    session: Session,
+    current_user: CurrentUser,
+):
+    event = await session.get(Event, event_id)
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event does not exist",
+        )
 
+    result = await session.execute(
+        select(EventSeat)
+        .where(EventSeat.id == event_seat_id, EventSeat.event_id == event_id)
+        .with_for_update()
+    )
+    event_seat = result.scalars().first()
+    if event_seat is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Seat not found for this event",
+        )
+
+    if event_seat.status == EventSeatStatus.HELD:
+        await release_expired_hold(session, event_seat)
+
+    if event_seat.status != EventSeatStatus.AVAILABLE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This seat is not available",
+        )
+
+    event_seat.status = EventSeatStatus.HELD
+
+    new_hold = Hold(
+        event_seat_id=event_seat.id,
+        user_id=current_user.id,
+        expires_at=datetime.now(timezone.utc) + timedelta(seconds=event.hold_ttl_seconds),
+    )
+
+    session.add(new_hold)
+    await session.commit()
+    await session.refresh(new_hold)
+    return new_hold

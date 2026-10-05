@@ -10,6 +10,7 @@ class EventCreate(BaseModel):
     title: str = Field(max_length=100)
     starts_at: datetime
     prices: dict[SeatType, Decimal]
+    hold_ttl_seconds: int = Field(default=600, ge=60, le=3600)
 
 class EventResponse(BaseModel):
 
