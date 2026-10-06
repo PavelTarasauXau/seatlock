@@ -4,7 +4,7 @@ from src.models.seat_model import Seat
 from src.models.event_model import Event
 from src.models.event_seat_model import EventSeat
 from src.models.event_seat_model import EventSeatStatus
-from src.models.hold_model import Hold
+from src.models.hold_model import HoldStatus, Hold
 from src.models.booking_model import Booking
 from src.models.booking_item_model import BookingItem
 from src.models.payment_model import Payment
