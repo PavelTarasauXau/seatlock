@@ -3,8 +3,13 @@ import enum
 
 from datetime import datetime
 from sqlalchemy import Numeric, DateTime, Enum, ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.database import Base
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.models import BookingItem
+
 
 class BookingStatus(str, enum.Enum):
     PENDING_PAYMENT = "pending_payment"
@@ -33,3 +38,6 @@ class Booking(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+    items: Mapped[list["BookingItem"]] = relationship(back_populates="booking", lazy="selectin")

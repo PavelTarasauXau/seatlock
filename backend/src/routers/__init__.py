@@ -3,3 +3,4 @@ from src.routers.google_auth import router as google_router
 from src.routers.venues import router as venue_router
 from src.routers.events import router as event_router
 from src.routers.holds import router as hold_router
+from src.routers.bookings import router as booking_router
