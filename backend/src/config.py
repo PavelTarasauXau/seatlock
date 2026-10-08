@@ -14,5 +14,6 @@ class Settings(BaseSettings):
     DATABASE_URL: str 
     google_client_id: str
     google_client_secret: SecretStr
+    payment_webhook_secret: SecretStr
 
 settings = Settings()

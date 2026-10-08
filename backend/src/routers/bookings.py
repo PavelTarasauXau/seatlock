@@ -1,12 +1,14 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+import uuid
+from fastapi import APIRouter, HTTPException, status, Header
 from sqlalchemy import select
 
-from src.schemas import BookingResponse, BookingCreate
+from src.schemas import BookingResponse, BookingCreate, PaymentResponse
 from src.database import Session
 from src.auth import CurrentUser
-from src.models import Hold, HoldStatus, EventSeat, EventSeatStatus, Booking, BookingItem, BookingStatus
+from src.models import Hold, HoldStatus, EventSeat, EventSeatStatus, Booking, BookingItem, BookingStatus, Payment, PaymentStatus
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
@@ -141,4 +143,66 @@ async def cancel_booking(
     await session.commit()
     return booking
 
+
+@router.post("/{booking_id}/pay", response_model=PaymentResponse, status_code=status.HTTP_200_OK)
+async def pay_booking(
+    booking_id: int,
+    session: Session,
+    current_user: CurrentUser,
+    idempotency_key: Annotated[str, Header()]
+):
+
+    result = await session.execute(
+        select(Booking)
+        .where(Booking.id == booking_id, Booking.user_id == current_user.id)
+        .with_for_update()
+    )
+    booking = result.scalar_one_or_none()
+
+    if booking is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking not found",
+        )
+
+    existing_payment = await session.scalar(
+        select(Payment).where(Payment.idempotency_key == idempotency_key)
+    )
+    if existing_payment is not None:
+        if existing_payment.booking_id != booking_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Idempotency key is already used for another booking",
+            )
+        return existing_payment
+
+    if booking.status != BookingStatus.PENDING_PAYMENT:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Booking is not awaiting payment",
+        )
+
+    pending_payment = await session.scalar(
+        select(Payment).where(Payment.booking_id == booking_id, Payment.status == PaymentStatus.PENDING)
+    )
+    if pending_payment is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Payment is already processing",
+        )
+
+    new_payment = Payment(
+        booking_id=booking_id,
+        amount=booking.total_price,
+        provider="fake",
+        provider_ref=str(uuid.uuid4()),
+        idempotency_key=idempotency_key,
+    )
+
+    session.add(new_payment)
+    await session.commit()
+    await session.refresh(new_payment)
+    return new_payment
+
+    
     

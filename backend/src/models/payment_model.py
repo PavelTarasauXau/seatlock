@@ -24,7 +24,7 @@ class Payment(Base):
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     provider: Mapped[str] = mapped_column(String(50))
-    provider_ref: Mapped[str | None] = mapped_column(String(255))
+    provider_ref: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
     idempotency_key: Mapped[str] = mapped_column(String(255), unique=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
