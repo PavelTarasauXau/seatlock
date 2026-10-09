@@ -4,3 +4,5 @@ from src.routers.venues import router as venue_router
 from src.routers.events import router as event_router
 from src.routers.holds import router as hold_router
 from src.routers.bookings import router as booking_router
+from src.routers.payments import router as payment_router
+from src.routers.fake_provider import router as fake_provider_router

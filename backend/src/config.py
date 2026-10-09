@@ -15,5 +15,6 @@ class Settings(BaseSettings):
     google_client_id: str
     google_client_secret: SecretStr
     payment_webhook_secret: SecretStr
+    enable_fake_provider: bool = True
 
 settings = Settings()

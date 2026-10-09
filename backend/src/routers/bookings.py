@@ -128,6 +128,15 @@ async def cancel_booking(
             detail="Only unpaid bookings can be cancelled",
         )
 
+    pending_payment = await session.scalar(
+        select(Payment).where(Payment.booking_id == booking_id, Payment.status == PaymentStatus.PENDING)
+    )
+    if pending_payment is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Booking has a payment in progress",
+        )
+
     seat_ids = [item.event_seat_id for item in booking.items]
     seats = (await session.scalars(
         select(EventSeat)

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from src.config import settings
 from src.database import engine, Base
 from src.models import Venue, User, Seat
-from src.routers import router as user_router, google_router, venue_router, event_router, hold_router, booking_router
+from src.routers import router as user_router, google_router, venue_router, event_router, hold_router, booking_router, payment_router, fake_provider_router
 from src.services import run_hold_expiration_loop
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -33,6 +33,9 @@ app.include_router(venue_router)
 app.include_router(event_router)
 app.include_router(hold_router)
 app.include_router(booking_router)
+app.include_router(payment_router)
+if settings.enable_fake_provider:
+    app.include_router(fake_provider_router)
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key.get_secret_value())
 
 @app.get("/home")
