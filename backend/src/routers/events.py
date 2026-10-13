@@ -8,6 +8,7 @@ from src.auth import CurrentUser
 from src.models import Event, Venue, EventSeat, Hold
 from src.models.event_seat_model import EventSeatStatus
 from src.services import release_expired_hold
+from src.exceptions import ConflictError
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -16,6 +17,7 @@ async def get_events(
     session: Session,
     current_user: CurrentUser,
 ):
+    #raise ConflictError("test")
     events = await session.scalars(select(Event))
     return events.all()
 
