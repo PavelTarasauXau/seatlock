@@ -10,6 +10,11 @@ from src.routers import router as user_router, google_router, venue_router, even
 from src.services import run_hold_expiration_loop
 from starlette.middleware.sessions import SessionMiddleware
 from src.exceptions import AppError
+from src.redis_client import redis
+from src.rate_limiter import RateLimiterMiddleware
+
+RATE_LIMITER = 5
+WINDOW_SECONDS = 10
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,11 +28,19 @@ async def lifespan(app: FastAPI):
         run_hold_expiration_loop(settings.hold_expiration_interval_seconds)
     )
     yield
+
     expiration_task.cancel()
     with suppress(asyncio.CancelledError):
         await expiration_task
+    await redis.aclose()
 
 app = FastAPI(lifespan=lifespan)
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 app.include_router(user_router)
 app.include_router(google_router)
@@ -39,6 +52,7 @@ app.include_router(payment_router)
 if settings.enable_fake_provider:
     app.include_router(fake_provider_router)
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key.get_secret_value())
+#app.add_middleware(RateLimiterMiddleware, limit=RATE_LIMITER, window=WINDOW_SECONDS)
 
 @app.exception_handler(AppError)
 async def app_err_handler(request: Request, exc: AppError):

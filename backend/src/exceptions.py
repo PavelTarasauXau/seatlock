@@ -17,3 +17,11 @@ class ConflictError(AppError):
 class BadRequestError(AppError):
 
     status_code = 400
+
+class TooManyRequestsError(AppError):
+
+    status_code = 429
+
+class TooManyRequestsError(AppError):
+
+    status_code = 429

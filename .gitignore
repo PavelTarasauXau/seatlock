@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 *.egg-info/
 *.db
+backend/src/seed.py
 
 # IDE
 .vscode/

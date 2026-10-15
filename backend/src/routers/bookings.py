@@ -8,6 +8,7 @@ from sqlalchemy import select
 from src.schemas import BookingResponse, BookingCreate, PaymentResponse
 from src.database import Session
 from src.auth import CurrentUser
+from src.services import booking_service
 from src.models import Hold, HoldStatus, EventSeat, EventSeatStatus, Booking, BookingItem, BookingStatus, Payment, PaymentStatus
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
@@ -109,48 +110,7 @@ async def cancel_booking(
     session: Session,
     current_user: CurrentUser,
 ):
-
-    booking = await session.scalar(
-        select(Booking)
-        .where(Booking.id == booking_id, Booking.user_id == current_user.id)
-        .with_for_update()
-    )
-
-    if booking is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Booking not found",
-        )
-
-    if booking.status != BookingStatus.PENDING_PAYMENT:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Only unpaid bookings can be cancelled",
-        )
-
-    pending_payment = await session.scalar(
-        select(Payment).where(Payment.booking_id == booking_id, Payment.status == PaymentStatus.PENDING)
-    )
-    if pending_payment is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Booking has a payment in progress",
-        )
-
-    seat_ids = [item.event_seat_id for item in booking.items]
-    seats = (await session.scalars(
-        select(EventSeat)
-        .where(EventSeat.id.in_(seat_ids))
-        .order_by(EventSeat.id)
-        .with_for_update()
-    )).all()
-
-    booking.status = BookingStatus.CANCELLED
-    for seat in seats:
-        seat.status = EventSeatStatus.AVAILABLE
-
-    await session.commit()
-    return booking
+    return await booking_service.cancel_booking(session, booking_id, current_user.id)
 
 
 @router.post("/{booking_id}/pay", response_model=PaymentResponse, status_code=status.HTTP_200_OK)

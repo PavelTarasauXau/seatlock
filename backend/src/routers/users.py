@@ -9,6 +9,7 @@ from src.database import Session
 from src.models.user_model import User
 from src.auth import CurrentUser, hash_password, verify_password, create_access_token
 from sqlalchemy import select
+from src.login_limiter import ensure_login_allowed, register_failed_login, reset_login_attempts
 
 router = APIRouter(prefix= "/users", tags=["Users"])
 
@@ -17,10 +18,14 @@ async def login_for_access_token(
     session: Session,
     form_data: OAuth2PasswordRequestForm = Depends(), 
 ):
-    result = await session.execute(select(User).where(User.email == form_data.username.lower()))
+    email = form_data.username.lower()
+    await ensure_login_allowed(email)
+
+    result = await session.execute(select(User).where(User.email == email))
     user = result.scalars().first()
 
     if not user or user.hashed_password is None:
+        await register_failed_login(email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный email или пароль",
@@ -28,16 +33,18 @@ async def login_for_access_token(
         )
 
     if not verify_password(form_data.password, user.hashed_password):
+        await register_failed_login(email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный email или пароль",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    await reset_login_attempts(email)
     access_token = create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("",response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_in: UserCreate,
     session: Session,

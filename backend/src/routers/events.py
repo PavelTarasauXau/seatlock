@@ -8,7 +8,7 @@ from src.auth import CurrentUser
 from src.models import Event, Venue, EventSeat, Hold
 from src.models.event_seat_model import EventSeatStatus
 from src.services import release_expired_hold
-from src.exceptions import ConflictError
+from src.services import event_cache
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -17,9 +17,7 @@ async def get_events(
     session: Session,
     current_user: CurrentUser,
 ):
-    #raise ConflictError("test")
-    events = await session.scalars(select(Event))
-    return events.all()
+    return await event_cache.get_events_cached(session)
 
 @router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 async def create_event(
@@ -78,6 +76,7 @@ async def create_event(
 
     session.add_all(event_seats)
     await session.commit()
+    await event_cache.invalidate_events_cache()
     await session.refresh(new_event)
     return new_event
 

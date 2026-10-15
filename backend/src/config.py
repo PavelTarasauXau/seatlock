@@ -16,5 +16,6 @@ class Settings(BaseSettings):
     google_client_secret: SecretStr
     payment_webhook_secret: SecretStr
     enable_fake_provider: bool = True
+    REDIS_URL: str 
 
 settings = Settings()
